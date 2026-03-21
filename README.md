@@ -77,10 +77,11 @@ pnpm dev
    ```bash
    npx supabase login
    npx supabase link --project-ref 여기에_프로젝트_ID
-   npx supabase functions deploy
+   npx supabase functions deploy server --no-verify-jwt
    ```
-   - `supabase/functions/server` 안의 함수가 배포됩니다.
-   - 배포 후 Supabase 대시보드 **Edge Functions**에서 `server`(폴더 이름)가 보이면 성공.
+   - 프로젝트 루트에서 실행. `server`는 `supabase/functions/server` 폴더 이름입니다.
+   - 코드 수정 후 다시 배포할 때도 위 명령 한 번 더 실행하면 됩니다.
+   - 배포 후 Supabase 대시보드 **Edge Functions**에서 `server`가 보이면 성공.
 
 ### 2. Vercel 쪽 (프론트)
 

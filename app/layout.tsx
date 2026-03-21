@@ -28,7 +28,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={`${cormorant.variable} ${noto.variable}`}>
-      <body className="dark min-h-screen bg-black text-[#f5f5dc] font-sans antialiased">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Lobster&family=Bebas+Neue&family=Abril+Fatface&family=Oswald:wght@700&family=Alfa+Slab+One&family=Special+Elite&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="dark min-h-screen bg-[#0d0d0d] text-[#f5f5dc] font-sans antialiased">
         {children}
       </body>
     </html>

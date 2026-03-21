@@ -26,6 +26,12 @@
     --input-background: #0a0a0a;
     --ring: #b91c1c;
     --radius: 0.25rem;
+    --splash-target-y: 40px;
+  }
+  @media (min-width: 640px) {
+    :root {
+      --splash-target-y: 56px;
+    }
   }
 
   body {
@@ -48,5 +54,83 @@
   }
   .mystery-spotlight {
     background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(185, 28, 28, 0.12) 0%, transparent 60%);
+  }
+  .writing-vertical {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    letter-spacing: 2px;
+  }
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  @keyframes fade-in-down {
+    0% { opacity: 0; transform: translate(-50%, -12px); }
+    15% { opacity: 1; transform: translate(-50%, 0); }
+    85% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -8px); }
+  }
+  .animate-bounce-once {
+    animation: fade-in-down 4s ease forwards;
+  }
+
+  /* Splash: background overlay */
+  @keyframes splash-bg-out {
+    0%   { background: #0d0d0d; }
+    75%  { background: #0d0d0d; }
+    100% { background: transparent; }
+  }
+  .splash-bg {
+    animation: splash-bg-out 2.5s ease forwards;
+  }
+
+  /* Splash: logo from center → top position */
+  .splash-logo-journey {
+    --ty: var(--splash-target-y);
+    animation: logo-journey 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes logo-journey {
+    0% {
+      transform: translate(-50%, calc(50vh - 50%)) scale(1.6);
+      opacity: 0;
+    }
+    16% {
+      transform: translate(-50%, calc(50vh - 50%)) scale(1.6);
+      opacity: 1;
+    }
+    48% {
+      transform: translate(-50%, calc(50vh - 50%)) scale(1.6);
+      opacity: 1;
+    }
+    88% {
+      transform: translate(-50%, var(--ty)) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(-50%, var(--ty)) scale(1);
+      opacity: 0;
+    }
+  }
+
+  /* Splash: red spotlight flicker */
+  @keyframes spotlight-flicker {
+    0%   { opacity: 0; }
+    74%  { opacity: 0; }
+    76%  { opacity: 0.7; }
+    78%  { opacity: 0.1; }
+    81%  { opacity: 0.9; }
+    83%  { opacity: 0.2; }
+    86%  { opacity: 1; }
+    88%  { opacity: 0.4; }
+    91%  { opacity: 1; }
+    94%  { opacity: 0.6; }
+    97%  { opacity: 1; }
+    100% { opacity: 1; }
+  }
+  .splash-spotlight-flicker {
+    animation: spotlight-flicker 3.2s ease forwards;
   }
 }
