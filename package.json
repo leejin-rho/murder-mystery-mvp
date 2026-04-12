@@ -2,18 +2,17 @@
   "name": "murder-mystery-game",
   "version": "1.0.0",
   "private": true,
-  "description": "Real-time multiplayer murder mystery game (Next.js + Supabase)",
+  "description": "Real-time multiplayer murder mystery game (Next.js + Upstash Redis)",
   "packageManager": "pnpm@9.14.2",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "dev:server": "cd server && pnpm run dev"
+    "lint": "next lint"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.0",
-    "@supabase/supabase-js": "^2.95.3",
+    "@upstash/redis": "^1.37.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.563.0",
