@@ -319,7 +319,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
     if (!playerName.trim()) return setError("이름을 입력해주세요");
     setLoading(true); setError("");
     try {
-      const data = await api("/room/create", { playerName: playerName.trim(), scenarioId: selectedScenarioId });
+      const data = await api("/room", { playerName: playerName.trim(), scenarioId: selectedScenarioId });
       if (data.success) {
         setRoomId(data.roomId); setPlayerId(data.playerId); syncGameState(data.gameState); setScreen("lobby");
         const meta = ALL_SCENARIOS.find(s => s.id === selectedScenarioId);
@@ -469,7 +469,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                   const age = Date.now() - g.createdAt;
                   const mins = Math.floor(age / 60000);
                   const timeStr = mins < 60 ? `${mins}분 전` : mins < 1440 ? `${Math.floor(mins / 60)}시간 전` : `${Math.floor(mins / 1440)}일 전`;
-                  const expired = age > 2 * 60 * 60 * 1000;
+                  const expired = age > 4 * 60 * 60 * 1000;
                   return (
                     <div key={g.roomId} className={`flex items-center gap-3 rounded-[5px] border p-3 ${expired ? "border-[#333] bg-[#111] opacity-50" : "border-[#404040] bg-[#1a1a1a]"}`}>
                       <div className="flex-1 min-w-0">

@@ -1,0 +1,225 @@
+import { SCENARIO_REGISTRY } from "@/data/scenario";
+import type { GameState, Player } from "./redis";
+
+/* ── Helpers ── */
+
+export function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+export function makeId(len = 6): string {
+  return Math.random().toString(36).substring(2, 2 + len).toUpperCase();
+}
+
+export function makePlayerId(): string {
+  return `p_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
+}
+
+export function getScenario(scenarioId: string) {
+  const s = SCENARIO_REGISTRY[scenarioId];
+  if (!s) throw new Error(`Unknown scenario: ${scenarioId}`);
+  return s;
+}
+
+/* ── State transitions ── */
+
+/**
+ * discussionEndsAt이 지났으면 상태를 자동 전환.
+ * 변경이 있으면 true 반환.
+ */
+export function checkAutoTransition(gs: GameState): boolean {
+  if (gs.status !== "discussion") return false;
+  if (!gs.discussionEndsAt || Date.now() < gs.discussionEndsAt) return false;
+
+  const scenario = SCENARIO_REGISTRY[gs.scenario];
+  if (!scenario) return false;
+
+  const roundData = scenario.rounds.find((r) => r.id === gs.currentRound);
+
+  if (roundData?.event) {
+    gs.status = "event";
+    gs.currentEvent = { title: roundData.event.title, text: roundData.event.text };
+    gs.readyPlayers["event"] = [];
+  } else if (gs.currentRound >= gs.totalRounds) {
+    gs.status = "final_vote";
+  } else {
+    advanceToNextRound(gs);
+  }
+
+  gs.discussionEndsAt = null;
+  return true;
+}
+
+export function advanceToNextRound(gs: GameState): void {
+  const scenario = SCENARIO_REGISTRY[gs.scenario];
+  if (!scenario) return;
+
+  gs.currentRound++;
+  const roundData = scenario.rounds.find((r) => r.id === gs.currentRound);
+
+  gs.status = "card_pick";
+  gs.currentTurnIndex = 0;
+  gs.cardsPickedThisRound = 0;
+  gs.cardsPerPlayerThisRound = roundData?.cardsPerPlayer ?? 1;
+  gs.currentEvent = null;
+
+  // 이번 라운드에 필요한 카드 수 계산 후 availableCards 보충
+  const need = gs.players.length * gs.cardsPerPlayerThisRound;
+  const inHands = new Set(Object.values(gs.playerHands).flat());
+  const inPool = new Set(gs.availableCards);
+
+  if (gs.availableCards.length < need) {
+    const sorted = [...scenario.hintCards].sort((a, b) => a.number - b.number);
+    for (const card of sorted) {
+      if (gs.availableCards.length >= need) break;
+      if (inHands.has(card.id) || inPool.has(card.id)) continue;
+      gs.availableCards.push(card.id);
+      inPool.add(card.id);
+    }
+  }
+}
+
+/* ── Room / Game initialization ── */
+
+export function createInitialGameState(
+  roomId: string,
+  scenarioId: string,
+  firstPlayer: Player
+): GameState {
+  const scenario = getScenario(scenarioId);
+
+  const initialCardIds = shuffle(
+    scenario.hintCards
+      .filter((c) => scenario.initialCards.includes(c.number))
+      .map((c) => c.id)
+  );
+
+  return {
+    roomId,
+    scenario: scenarioId,
+    players: [firstPlayer],
+    status: "waiting",
+    createdAt: Date.now(),
+    currentRound: 0,
+    totalRounds: scenario.rounds.length,
+    currentTurnIndex: 0,
+    cardsPickedThisRound: 0,
+    cardsPerPlayerThisRound: 0,
+    availableCards: initialCardIds,
+    playerHands: {},
+    discussionEndsAt: null,
+    currentEvent: null,
+    finalVotes: {},
+    readyPlayers: {},
+    results: null,
+  };
+}
+
+export function assignRoles(gs: GameState): void {
+  const scenario = getScenario(gs.scenario);
+  const shuffledRoles = shuffle(scenario.roles);
+  gs.players.forEach((p, i) => {
+    p.roleId = shuffledRoles[i].id;
+    p.roleName = shuffledRoles[i].name;
+    gs.playerHands[p.id] = [];
+  });
+}
+
+/* ── Card picking with unlock chain ── */
+
+export function applyCardPick(
+  gs: GameState,
+  playerId: string,
+  cardId: string
+): { unlockedNums: number[]; cardNumber: number; playerName: string } {
+  const scenario = getScenario(gs.scenario);
+  const pickedCard = scenario.hintCards.find((c) => c.id === cardId);
+  if (!pickedCard) throw new Error("카드를 찾을 수 없습니다");
+
+  // 카드 풀에서 제거
+  const idx = gs.availableCards.indexOf(cardId);
+  if (idx === -1) throw new Error("이미 선택된 카드입니다");
+  gs.availableCards.splice(idx, 1);
+
+  // 손패에 추가
+  if (!gs.playerHands[playerId]) gs.playerHands[playerId] = [];
+  gs.playerHands[playerId].push(cardId);
+
+  // 해금 처리
+  const unlockedNums: number[] = [];
+  if (pickedCard.unlocks) {
+    const allOwned = new Set(Object.values(gs.playerHands).flat());
+    for (const num of pickedCard.unlocks) {
+      const unlockCard = scenario.hintCards.find((c) => c.number === num);
+      if (
+        unlockCard &&
+        !gs.availableCards.includes(unlockCard.id) &&
+        !allOwned.has(unlockCard.id)
+      ) {
+        gs.availableCards.push(unlockCard.id);
+        unlockedNums.push(num);
+      }
+    }
+  }
+
+  gs.currentTurnIndex++;
+  gs.cardsPickedThisRound++;
+
+  const turnPlayer = gs.players.find((p) => p.id === playerId)!;
+  const playerName = turnPlayer.roleName || turnPlayer.name;
+
+  // 이번 라운드 카드 선택 완료 여부 확인
+  const totalPicksNeeded = gs.players.length * gs.cardsPerPlayerThisRound;
+  if (gs.cardsPickedThisRound >= totalPicksNeeded || gs.availableCards.length === 0) {
+    const roundData = scenario.rounds.find((r) => r.id === gs.currentRound);
+    gs.status = "discussion";
+    gs.discussionEndsAt = Date.now() + (roundData?.discussionSeconds ?? 120) * 1000;
+  }
+
+  return { unlockedNums, cardNumber: pickedCard.number, playerName };
+}
+
+/* ── Voting & Results ── */
+
+export function calculateResults(gs: GameState): void {
+  const scenario = getScenario(gs.scenario);
+  const truth = scenario.truth;
+  const results: Record<string, { won: boolean; reason: string }> = {};
+
+  const accuseCount = Object.values(gs.finalVotes).filter(
+    (v) => v.killer === truth.killerId
+  ).length;
+  const majorityAccused = accuseCount > gs.players.length / 2;
+
+  for (const p of gs.players) {
+    const vote = gs.finalVotes[p.id];
+    const role = scenario.roles.find((r) => r.id === p.roleId);
+
+    if (role?.isMurderer) {
+      results[p.id] = majorityAccused
+        ? { won: false, reason: "추리 끝, 모두가 당신을 범인으로 지목했습니다. 비밀이 드러나고 말았습니다." }
+        : { won: true, reason: "의심은 다른 이들에게 돌아갔고, 당신의 정체는 끝까지 감춰졌습니다." };
+    } else {
+      const correctKiller = vote?.killer === truth.killerId;
+      const correctMotive = vote?.motive === truth.motive;
+      const correctMethod = vote?.method === truth.method;
+      const score = [correctKiller, correctMotive, correctMethod].filter(Boolean).length;
+
+      if (score === 3) {
+        results[p.id] = { won: true, reason: "범인과 동기, 그리고 범행 방법까지 정확히 꿰뚫었습니다. 진실을 온전히 밝혀낸 추리였습니다." };
+      } else if (correctKiller) {
+        results[p.id] = { won: true, reason: `범인을 올바르게 지목했습니다. 동기와 방법까지 더 파고들었다면 완벽했을 텐데요. (${score}/3)` };
+      } else {
+        results[p.id] = { won: false, reason: `진범을 놓쳤습니다. 단서는 곳곳에 있었지만, 결국 맞추지 못했네요. (${score}/3)` };
+      }
+    }
+  }
+
+  gs.results = results;
+  gs.status = "result";
+}
