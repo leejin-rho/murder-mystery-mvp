@@ -113,7 +113,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           if (phase === "intro") advanceToNextRound(gs);
           else if (phase === "event") {
             gs.currentEvent = null;
-            gs.currentRound >= gs.totalRounds ? (gs.status = "final_vote") : advanceToNextRound(gs);
+            gs.availableCards.length === 0 ? (gs.status = "final_vote") : advanceToNextRound(gs);
           }
         }
         await setGameState(gs.roomId, gs);

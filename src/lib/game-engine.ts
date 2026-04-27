@@ -39,13 +39,13 @@ export function checkAutoTransition(gs: GameState): boolean {
   const scenario = SCENARIO_REGISTRY[gs.scenario];
   if (!scenario) return false;
 
-  const roundData = scenario.rounds.find((r) => r.id === gs.currentRound);
+  const event = scenario.events?.find((e) => e.afterRound === gs.currentRound);
 
-  if (roundData?.event) {
+  if (event) {
     gs.status = "event";
-    gs.currentEvent = { title: roundData.event.title, text: roundData.event.text };
+    gs.currentEvent = { title: event.title, text: event.text };
     gs.readyPlayers["event"] = [];
-  } else if (gs.currentRound >= gs.totalRounds) {
+  } else if (gs.availableCards.length === 0) {
     gs.status = "final_vote";
   } else {
     advanceToNextRound(gs);
@@ -56,32 +56,12 @@ export function checkAutoTransition(gs: GameState): boolean {
 }
 
 export function advanceToNextRound(gs: GameState): void {
-  const scenario = SCENARIO_REGISTRY[gs.scenario];
-  if (!scenario) return;
-
   gs.currentRound++;
-  const roundData = scenario.rounds.find((r) => r.id === gs.currentRound);
-
   gs.status = "card_pick";
   gs.currentTurnIndex = 0;
   gs.cardsPickedThisRound = 0;
-  gs.cardsPerPlayerThisRound = roundData?.cardsPerPlayer ?? 1;
   gs.currentEvent = null;
-
-  // 이번 라운드에 필요한 카드 수 계산 후 availableCards 보충
-  const need = gs.players.length * gs.cardsPerPlayerThisRound;
-  const inHands = new Set(Object.values(gs.playerHands).flat());
-  const inPool = new Set(gs.availableCards);
-
-  if (gs.availableCards.length < need) {
-    const sorted = [...scenario.hintCards].sort((a, b) => a.number - b.number);
-    for (const card of sorted) {
-      if (gs.availableCards.length >= need) break;
-      if (inHands.has(card.id) || inPool.has(card.id)) continue;
-      gs.availableCards.push(card.id);
-      inPool.add(card.id);
-    }
-  }
+  // 카드 등장은 unlock chain이 담당
 }
 
 /* ── Room / Game initialization ── */
@@ -106,10 +86,8 @@ export function createInitialGameState(
     status: "waiting",
     createdAt: Date.now(),
     currentRound: 0,
-    totalRounds: scenario.rounds.length,
     currentTurnIndex: 0,
     cardsPickedThisRound: 0,
-    cardsPerPlayerThisRound: 0,
     availableCards: initialCardIds,
     playerHands: {},
     discussionEndsAt: null,
@@ -173,12 +151,9 @@ export function applyCardPick(
   const turnPlayer = gs.players.find((p) => p.id === playerId)!;
   const playerName = turnPlayer.roleName || turnPlayer.name;
 
-  // 이번 라운드 카드 선택 완료 여부 확인
-  const totalPicksNeeded = gs.players.length * gs.cardsPerPlayerThisRound;
-  if (gs.cardsPickedThisRound >= totalPicksNeeded || gs.availableCards.length === 0) {
-    const roundData = scenario.rounds.find((r) => r.id === gs.currentRound);
+  if (gs.cardsPickedThisRound >= gs.players.length || gs.availableCards.length === 0) {
     gs.status = "discussion";
-    gs.discussionEndsAt = Date.now() + (roundData?.discussionSeconds ?? 120) * 1000;
+    gs.discussionEndsAt = Date.now() + (scenario.discussionSeconds ?? 180) * 1000;
   }
 
   return { unlockedNums, cardNumber: pickedCard.number, playerName };
@@ -200,7 +175,7 @@ export function calculateResults(gs: GameState): void {
     const vote = gs.finalVotes[p.id];
     const role = scenario.roles.find((r) => r.id === p.roleId);
 
-    if (role?.isMurderer) {
+    if (role?.id === truth.killerId) {
       results[p.id] = majorityAccused
         ? { won: false, reason: "추리 끝, 모두가 당신을 범인으로 지목했습니다. 비밀이 드러나고 말았습니다." }
         : { won: true, reason: "의심은 다른 이들에게 돌아갔고, 당신의 정체는 끝까지 감춰졌습니다." };

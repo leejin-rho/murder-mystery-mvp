@@ -17,7 +17,19 @@ Next.js 14 App Router · Upstash Redis · Tailwind CSS · pnpm · Vercel
 
 Server auto-transitions on timer expiry, detected during GET polling. No WebSockets.
 
-## Non-obvious Decisions
-- Cards have both `id` (internal key) and `number` (shown to players) — don't confuse them; `availableCards` uses `id`, `unlocks` uses `number`
-- `visibleTo` on secret cards is client-side filtered only — full GameState is sent to all clients
-- `actionRule` (show_all, ask_question, etc.) is defined in card data but **not enforced in UI** — currently just text hints
+Each round = all players pick 1 card each → timed discussion. Game ends when `availableCards` is empty after discussion.
+
+## Card System
+Cards have two identifiers: `id` (internal, used in `availableCards`/`playerHands`) and `number` (displayed to players, used in `unlocks`). Don't mix them.
+
+Cards enter the pool via two paths only:
+1. `scenario.initialCards` — seeded at game start
+2. `HintCard.unlocks` — added to pool when the parent card is picked
+
+Every card must be reachable from `initialCards` through the unlock graph, or it will never appear. There is no auto-fill fallback.
+
+Total card count (initialCards + all reachable via unlocks) must be a multiple of `playerCount`. Otherwise the last round ends with some players unable to pick.
+
+`visibleTo` on secret cards is client-side filtered only — full GameState is sent to all clients.
+
+`actionRule` (`show_all`, `keep_secret`, `ask_question`) is defined in card data but not enforced in UI — currently text hints only.
