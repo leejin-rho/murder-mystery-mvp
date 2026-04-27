@@ -46,10 +46,8 @@ interface GameState {
   players: Player[];
   status: string;
   currentRound: number;
-  totalRounds: number;
   currentTurnIndex: number;
   cardsPickedThisRound: number;
-  cardsPerPlayerThisRound: number;
   availableCards: string[];
   playerHands: Record<string, string[]>;
   chat: { playerId: string; name: string; playerName?: string; text: string; time: number }[];
@@ -288,8 +286,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
     if (status && status !== prevStatusRef.current && toastKey !== toastShownRef.current) {
       toastShownRef.current = toastKey;
       if (status === "discussion" && gameState?.discussionEndsAt) {
-        const roundData = scenario?.rounds?.find(r => r.id === round);
-        const durationMins = roundData ? Math.floor(roundData.discussionSeconds / 60) : 3;
+        const durationMins = scenario ? Math.floor(scenario.discussionSeconds / 60) : 3;
         setToast(`라운드 ${round} 토론을 시작해주세요. (${durationMins}분)`);
         setTimeout(() => setToast(""), 4000);
       } else if (status === "card_pick" && prevStatusRef.current) {
@@ -688,10 +685,6 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                     <p className="text-[#f5a3a3] leading-relaxed italic">{currentRole.secret}</p>
                   </div>
                   <div className="rounded-[5px] bg-[#111] border border-[#333] p-2">
-                    <p className="text-[9px] text-[#f5c542] uppercase tracking-wider mb-1">개인 목표</p>
-                    <p className="text-[#d4d4d4] leading-relaxed">{currentRole.objective}</p>
-                  </div>
-                  <div className="rounded-[5px] bg-[#111] border border-[#333] p-2">
                     <p className="text-[9px] text-green-400 uppercase tracking-wider mb-1">승리 조건</p>
                     <p className="text-[#d4d4d4] leading-relaxed">{currentRole.winCondition}</p>
                   </div>
@@ -727,16 +720,15 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
             )}
             {myCardsSorted.map(card => {
               if (!card) return null;
-              const isSecret = card.type === "secret" && card.visibleTo && card.visibleTo !== currentPlayer?.roleId;
               return (
-                <div key={card.id} className={`rounded-[5px] p-2 text-xs font-sans ${card.type === "action" ? "bg-[#2a1a0a] border border-[#8b5e2a]/40 text-[#f5c542]" : card.type === "secret" ? "bg-[#1a0a1a] border border-[#8b2a8b]/40 text-[#d4a3d4]" : "bg-[#1a1a1a] border border-[#404040] text-[#d4d4d4]"}`}>
+                <div key={card.id} className={`rounded-[5px] p-2 text-xs font-sans ${card.type === "action" ? "bg-[#2a1a0a] border border-[#8b5e2a]/40 text-[#f5c542]" : "bg-[#1a1a1a] border border-[#404040] text-[#d4d4d4]"}`}>
                   <div className="flex items-start gap-1.5">
-                    <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-mono font-bold ${card.type === "action" ? "bg-[#8b5e2a]/30 text-[#f5c542]" : card.type === "secret" ? "bg-[#8b2a8b]/30 text-[#d4a3d4]" : "bg-[#404040]/50 text-[#a3a3a3]"}`}>
+                    <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-mono font-bold ${card.type === "action" ? "bg-[#8b5e2a]/30 text-[#f5c542]" : "bg-[#404040]/50 text-[#a3a3a3]"}`}>
                       {card.number}
                     </span>
-                    <span className="flex-1 leading-relaxed">{isSecret ? <span className="text-[#737373] italic">역할과 관련 없는 카드</span> : card.content}</span>
+                    <span className="flex-1 leading-relaxed">{card.content}</span>
                   </div>
-                  {!isSecret && card.unlocks && card.unlocks.length > 0 && (
+                  {card.unlocks && card.unlocks.length > 0 && (
                     <p className="text-[9px] text-[#737373] mt-1 pl-6">→ {card.unlocks.map(n => `${n}번`).join(", ")} 해금</p>
                   )}
                 </div>
@@ -795,7 +787,6 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
               <div className="space-y-3 text-sm font-sans">
                 <div><span className="text-[#a3a3a3] text-xs uppercase tracking-wider">배경</span><p className="text-[#f5f5dc] mt-1">{currentRole.background}</p></div>
                 <div className="pt-3 border-t border-[#404040]"><span className="text-[#b91c1c] text-xs uppercase tracking-wider">비밀 (절대 공개 금지)</span><p className="text-[#f5f5dc] mt-1 italic">{currentRole.secret}</p></div>
-                <div className="pt-3 border-t border-[#404040]"><span className="text-[#f5c542] text-xs uppercase tracking-wider">개인 목표</span><p className="text-[#f5f5dc] mt-1">{currentRole.objective}</p></div>
                 <div className="pt-3 border-t border-[#404040]"><span className="text-green-400 text-xs uppercase tracking-wider">승리 조건</span><p className="text-[#f5f5dc] mt-1">{currentRole.winCondition}</p></div>
                 {currentRole.knownInfo.length > 0 && (
                   <div className="pt-3 border-t border-[#404040]">
@@ -873,7 +864,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                 <p className={`font-sans text-lg ${isMyTurn ? "text-[#f5c542]" : "text-[#a3a3a3]"}`}>
                   {isMyTurn ? "당신의 턴입니다! 카드를 선택하세요." : `${turnPlayer?.roleName || turnPlayer?.name}님이 선택 중...`}
                 </p>
-                <p className="text-[#737373] text-sm font-sans mt-2">1인당 {gameState.cardsPerPlayerThisRound}장 선택 · {gameState.cardsPickedThisRound}/{total * gameState.cardsPerPlayerThisRound} 완료</p>
+                <p className="text-[#737373] text-sm font-sans mt-2">1인당 1장 선택 · {gameState.cardsPickedThisRound}/{total} 완료</p>
               </div>
               <div className="space-y-6">
                 {cardsByLocation.map(({ location, cards }) => (

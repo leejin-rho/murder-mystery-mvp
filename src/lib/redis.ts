@@ -64,11 +64,9 @@ export interface GameState {
   players: Player[];
   status: GameStatus;
   createdAt: number;
-  currentRound: number;
-  totalRounds: number;
+  currentRound: number;       // sweep counter (increments each time all players pick once)
   currentTurnIndex: number;
   cardsPickedThisRound: number;
-  cardsPerPlayerThisRound: number;
   availableCards: string[];
   playerHands: Record<string, string[]>;
   discussionEndsAt: number | null;
