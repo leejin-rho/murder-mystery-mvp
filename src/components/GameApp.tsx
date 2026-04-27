@@ -173,6 +173,8 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
   const [voteMethod, setVoteMethod] = useState("");
   const [toast, setToast] = useState("");
   const [pastEvents, setPastEvents] = useState<{ title: string; text: string }[]>([]);
+  const [justUnlocked, setJustUnlocked] = useState<Set<string>>(new Set());
+  const prevAvailableRef = useRef<Set<string>>(new Set());
   const chatEndRef = useRef<HTMLDivElement>(null);
   const prevStatusRef = useRef("");
   const toastShownRef = useRef("");
@@ -266,6 +268,26 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
 
   // Auto scroll chat
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [gameState?.chat?.length]);
+
+  // Detect newly unlocked cards and trigger glow animation
+  useEffect(() => {
+    if (!gameState || gameState.status !== "card_pick") {
+      prevAvailableRef.current = new Set();
+      return;
+    }
+    const current = new Set(gameState.availableCards);
+    const prev = prevAvailableRef.current;
+    if (prev.size > 0) {
+      const added = gameState.availableCards.filter(id => !prev.has(id));
+      if (added.length > 0) {
+        setJustUnlocked(new Set(added));
+        const t = setTimeout(() => setJustUnlocked(new Set()), 2500);
+        prevAvailableRef.current = current;
+        return () => clearTimeout(t);
+      }
+    }
+    prevAvailableRef.current = current;
+  }, [gameState]);
 
   // Auto-save event info when event phase is detected
   useEffect(() => {
@@ -828,13 +850,14 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
         const isTaken = inHandSet.has(card.id);
         const isLocked = !isAvailable && !isTaken;
         const canPick = isMyTurn && isAvailable;
+        const isNewlyUnlocked = justUnlocked.has(card.id);
         return (
           <button
             key={card.id}
             type="button"
             onClick={() => canPick && pickCard(card.id)}
             disabled={!canPick}
-            className={`aspect-[3/4] rounded-[5px] border-2 flex flex-col items-center justify-center gap-1 font-sans transition-all ${
+            className={`aspect-[3/4] rounded-[5px] border-2 flex flex-col items-center justify-center gap-1 font-sans transition-all ${isNewlyUnlocked ? "animate-card-unlock" : ""} ${
               isTaken
                 ? "border-[#333] bg-[#0a0a0a] opacity-50 cursor-default"
                 : isLocked
