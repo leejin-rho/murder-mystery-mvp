@@ -94,7 +94,6 @@ export function createInitialGameState(
     currentEvent: null,
     finalVotes: {},
     readyPlayers: {},
-    results: null,
   };
 }
 
@@ -159,42 +158,3 @@ export function applyCardPick(
   return { unlockedNums, cardNumber: pickedCard.number, playerName };
 }
 
-/* ── Voting & Results ── */
-
-export function calculateResults(gs: GameState): void {
-  const scenario = getScenario(gs.scenario);
-  const truth = scenario.truth;
-  const results: Record<string, { won: boolean; reason: string }> = {};
-
-  const accuseCount = Object.values(gs.finalVotes).filter(
-    (v) => v.killer === truth.killerId
-  ).length;
-  const majorityAccused = accuseCount > gs.players.length / 2;
-
-  for (const p of gs.players) {
-    const vote = gs.finalVotes[p.id];
-    const role = scenario.roles.find((r) => r.id === p.roleId);
-
-    if (role?.id === truth.killerId) {
-      results[p.id] = majorityAccused
-        ? { won: false, reason: "추리 끝, 모두가 당신을 범인으로 지목했습니다. 비밀이 드러나고 말았습니다." }
-        : { won: true, reason: "의심은 다른 이들에게 돌아갔고, 당신의 정체는 끝까지 감춰졌습니다." };
-    } else {
-      const correctKiller = vote?.killer === truth.killerId;
-      const correctMotive = vote?.motive === truth.motive;
-      const correctMethod = vote?.method === truth.method;
-      const score = [correctKiller, correctMotive, correctMethod].filter(Boolean).length;
-
-      if (score === 3) {
-        results[p.id] = { won: true, reason: "범인과 동기, 그리고 범행 방법까지 정확히 꿰뚫었습니다. 진실을 온전히 밝혀낸 추리였습니다." };
-      } else if (correctKiller) {
-        results[p.id] = { won: true, reason: `범인을 올바르게 지목했습니다. 동기와 방법까지 더 파고들었다면 완벽했을 텐데요. (${score}/3)` };
-      } else {
-        results[p.id] = { won: false, reason: `진범을 놓쳤습니다. 단서는 곳곳에 있었지만, 결국 맞추지 못했네요. (${score}/3)` };
-      }
-    }
-  }
-
-  gs.results = results;
-  gs.status = "result";
-}

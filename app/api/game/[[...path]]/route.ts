@@ -9,7 +9,6 @@ import {
   checkAutoTransition,
   advanceToNextRound,
   applyCardPick,
-  calculateResults,
 } from "@/lib/game-engine";
 
 function ok(data: object) { return NextResponse.json({ success: true, ...data }); }
@@ -147,10 +146,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
       // POST /api/game/room/:roomId/vote
       if (action === "vote") {
-        const { playerId, killer, motive, method } = body;
+        const { playerId, notes } = body;
         if (gs.status !== "final_vote") return err("투표 단계가 아닙니다");
-        gs.finalVotes[playerId] = { killer, motive, method };
-        if (gs.players.every((p) => gs.finalVotes[p.id])) calculateResults(gs);
+        gs.finalVotes[playerId] = notes ?? {};
+        if (gs.players.every((p) => gs.finalVotes[p.id])) gs.status = "result";
         await setGameState(gs.roomId, gs);
         return okWithChat(gs);
       }
