@@ -113,7 +113,7 @@ export function applyCardPick(
   gs: GameState,
   playerId: string,
   cardId: string
-): { unlockedNums: number[]; cardNumber: number; playerName: string } {
+): { unlockedNums: number[]; cardNumber: number; roleName: string } {
   const scenario = getScenario(gs.scenario);
   const pickedCard = scenario.hintCards.find((c) => c.id === cardId);
   if (!pickedCard) throw new Error("카드를 찾을 수 없습니다");
@@ -148,13 +148,13 @@ export function applyCardPick(
   gs.cardsPickedThisRound++;
 
   const turnPlayer = gs.players.find((p) => p.id === playerId)!;
-  const playerName = turnPlayer.roleName || turnPlayer.name;
+  const roleName = turnPlayer.roleName || turnPlayer.name;
 
   if (gs.cardsPickedThisRound >= gs.players.length || gs.availableCards.length === 0) {
     gs.status = "discussion";
     gs.discussionEndsAt = Date.now() + (scenario.discussionSeconds ?? 180) * 1000;
   }
 
-  return { unlockedNums, cardNumber: pickedCard.number, playerName };
+  return { unlockedNums, cardNumber: pickedCard.number, roleName };
 }
 

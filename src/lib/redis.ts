@@ -43,8 +43,8 @@ export interface Player {
 
 export interface ChatMessage {
   playerId: string;
-  name: string;
-  playerName?: string;
+  roleName: string;
+  playerName: string;
   text: string;
   time: number;
 }

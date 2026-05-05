@@ -50,7 +50,7 @@ interface GameState {
   cardsPickedThisRound: number;
   availableCards: string[];
   playerHands: Record<string, string[]>;
-  chat: { playerId: string; name: string; playerName?: string; text: string; time: number }[];
+  chat: { playerId: string; roleName: string; playerName: string; text: string; time: number }[];
   discussionEndsAt: number | null;
   currentEvent: { title: string; text: string } | null;
   finalVotes: Record<string, Record<string, string>>;
@@ -947,7 +947,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                   <div key={i} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[80%] rounded-sm px-3 py-2 ${isMe ? "bg-[#b91c1c]/20 border border-[#b91c1c]/30" : "bg-[#1a1a1a] border border-[#404040]"}`}>
                       <p className="text-xs mb-1 font-sans">
-                        <span className="font-bold text-[#f5f5dc]">{msg.name}</span>
+                        <span className="font-bold text-[#f5f5dc]">{msg.roleName}</span>
                         {displayName && <span className="font-normal text-[#a3a3a3]"> {displayName}</span>}
                       </p>
                       <p className="text-[#f5f5dc] text-sm font-sans">{msg.text}</p>
