@@ -43,8 +43,8 @@ export interface Player {
 
 export interface ChatMessage {
   playerId: string;
-  name: string;
-  playerName?: string;
+  roleName: string;
+  playerName: string;
   text: string;
   time: number;
 }
@@ -71,9 +71,8 @@ export interface GameState {
   playerHands: Record<string, string[]>;
   discussionEndsAt: number | null;
   currentEvent: { title: string; text: string } | null;
-  finalVotes: Record<string, { killer: string; motive: string; method: string }>;
+  finalVotes: Record<string, Record<string, string>>;  // playerId → { roleId: 주관식 메모 }
   readyPlayers: Record<string, string[]>;
-  results: Record<string, { won: boolean; reason: string }> | null;
   // chat is stored separately in Redis List, but merged for API responses
   chat?: ChatMessage[];
 }

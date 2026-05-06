@@ -50,12 +50,11 @@ interface GameState {
   cardsPickedThisRound: number;
   availableCards: string[];
   playerHands: Record<string, string[]>;
-  chat: { playerId: string; name: string; playerName?: string; text: string; time: number }[];
+  chat: { playerId: string; roleName: string; playerName: string; text: string; time: number }[];
   discussionEndsAt: number | null;
   currentEvent: { title: string; text: string } | null;
-  finalVotes: Record<string, { killer: string; motive: string; method: string }>;
+  finalVotes: Record<string, Record<string, string>>;
   readyPlayers: Record<string, string[]>;
-  results: Record<string, { won: boolean; reason: string }> | null;
 }
 
 const DIFFICULTY_COLOR: Record<string, string> = {
@@ -168,9 +167,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
   const [infoOpen, setInfoOpen] = useState(false);
   const [widePanel, setWidePanel] = useState(false);
   const chatInputRef = useRef<HTMLInputElement>(null);
-  const [voteKiller, setVoteKiller] = useState("");
-  const [voteMotive, setVoteMotive] = useState("");
-  const [voteMethod, setVoteMethod] = useState("");
+  const [voteNotes, setVoteNotes] = useState<Record<string, string>>({});
   const [toast, setToast] = useState("");
   const [pastEvents, setPastEvents] = useState<{ title: string; text: string }[]>([]);
   const [justUnlocked, setJustUnlocked] = useState<Set<string>>(new Set());
@@ -408,10 +405,10 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
   };
 
   const sendVote = async () => {
-    if (!gameState || !voteKiller || !voteMotive || !voteMethod) return setError("모든 항목을 선택해주세요");
+    if (!gameState) return;
     setLoading(true); setError("");
     try {
-      const data = await api(`/room/${gameState.roomId}/vote`, { playerId, killer: voteKiller, motive: voteMotive, method: voteMethod });
+      const data = await api(`/room/${gameState.roomId}/vote`, { playerId, notes: voteNotes });
       if (data.success) syncGameState(data.gameState); else setError(data.error);
     } catch { setError("서버 연결에 실패했습니다"); } finally { setLoading(false); }
   };
@@ -419,7 +416,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
   const resetGame = () => {
     if (gameState?.status === "result" && gameState?.roomId) removeRecentGame(gameState.roomId);
     setScreen("home"); setGameState(null); setPlayerId(""); setRoomId(""); setPlayerName(""); setSelectedScenarioId("");
-    setVoteKiller(""); setVoteMotive(""); setVoteMethod(""); setShowCards(true); setPastEvents([]);
+    setVoteNotes({}); setShowCards(true); setPastEvents([]);
     prevStatusRef.current = ""; toastShownRef.current = ""; lastStateRef.current = "";
     setRecentGames(getRecentGames());
     router.push("/");
@@ -950,7 +947,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                   <div key={i} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[80%] rounded-sm px-3 py-2 ${isMe ? "bg-[#b91c1c]/20 border border-[#b91c1c]/30" : "bg-[#1a1a1a] border border-[#404040]"}`}>
                       <p className="text-xs mb-1 font-sans">
-                        <span className="font-bold text-[#f5f5dc]">{msg.name}</span>
+                        <span className="font-bold text-[#f5f5dc]">{msg.roleName}</span>
                         {displayName && <span className="font-normal text-[#a3a3a3]"> {displayName}</span>}
                       </p>
                       <p className="text-[#f5f5dc] text-sm font-sans">{msg.text}</p>
@@ -996,50 +993,34 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
     if (status === "final_vote") {
       const hasVoted = !!gameState.finalVotes[playerId];
       const votedCount = Object.keys(gameState.finalVotes).length;
-      const otherPlayers = gameState.players.filter(p => p.id !== playerId);
 
       return gameLayout(
           <div className="min-h-screen bg-[#0d0d0d] px-4 py-6 sm:p-6 mystery-spotlight">
             <div className="max-w-2xl mx-auto">
               <h2 className="font-sans text-2xl sm:text-3xl font-bold text-[#b91c1c] mb-2 text-center">최종 추리</h2>
-              <p className="text-[#a3a3a3] text-sm text-center font-sans mb-6">범인, 동기, 방법을 선택하세요</p>
+              <p className="text-[#a3a3a3] text-sm text-center font-sans mb-6">각 인물에 대해 알아낸 것을 자유롭게 적어보세요</p>
               {hasVoted ? (
                 <div className="mystery-card rounded-sm p-6 text-center">
-                  <p className="text-[#f5f5dc] font-sans mb-2">투표 완료! 다른 플레이어를 기다리는 중...</p>
-                  <p className="text-[#737373] text-sm font-sans">{votedCount} / {total} 투표 완료</p>
+                  <p className="text-[#f5f5dc] font-sans mb-2">추리 제출 완료! 다른 플레이어를 기다리는 중...</p>
+                  <p className="text-[#737373] text-sm font-sans">{votedCount} / {total} 제출 완료</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="mystery-card rounded-sm p-4 sm:p-6">
-                    <h3 className="font-sans text-lg text-[#b91c1c] mb-3">범인은 누구입니까?</h3>
-                    <div className="space-y-2">
-                      {otherPlayers.map(p => (
-                        <button key={p.id} onClick={() => setVoteKiller(p.roleId)} className={`w-full text-left px-4 py-3 rounded-sm border transition-colors font-sans text-sm ${voteKiller === p.roleId ? "border-[#b91c1c] bg-[#b91c1c]/20 text-[#f5f5dc]" : "border-[#404040] bg-[#1a1a1a] text-[#d4d4d4] hover:bg-[#262626]"}`}>
-                          {p.roleName}
-                        </button>
-                      ))}
+                <div className="space-y-3">
+                  {gameState.players.map(p => (
+                    <div key={p.id} className="mystery-card rounded-sm p-4 sm:p-5">
+                      <label className="block font-sans text-sm text-[#f5f5dc] mb-2">
+                        {p.roleName}
+                        {p.id === playerId && <span className="text-[#525252] ml-2">(나)</span>}
+                      </label>
+                      <textarea
+                        value={voteNotes[p.roleId] ?? ""}
+                        onChange={e => setVoteNotes(prev => ({ ...prev, [p.roleId]: e.target.value }))}
+                        placeholder={`${p.roleName}에 대한 추리...`}
+                        rows={2}
+                        className="w-full bg-[#1a1a1a] border border-[#404040] rounded-sm px-3 py-2 text-[#d4d4d4] font-sans text-sm resize-none focus:outline-none focus:border-[#b91c1c] placeholder:text-[#525252]"
+                      />
                     </div>
-                  </div>
-                  <div className="mystery-card rounded-sm p-4 sm:p-6">
-                    <h3 className="font-sans text-lg text-[#b91c1c] mb-3">범행 동기는?</h3>
-                    <div className="space-y-2">
-                      {scenario.truth.motiveOptions.map((m, i) => (
-                        <button key={i} onClick={() => setVoteMotive(m)} className={`w-full text-left px-4 py-3 rounded-sm border transition-colors font-sans text-sm ${voteMotive === m ? "border-[#b91c1c] bg-[#b91c1c]/20 text-[#f5f5dc]" : "border-[#404040] bg-[#1a1a1a] text-[#d4d4d4] hover:bg-[#262626]"}`}>
-                          {m}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mystery-card rounded-sm p-4 sm:p-6">
-                    <h3 className="font-sans text-lg text-[#b91c1c] mb-3">범행 방법은?</h3>
-                    <div className="space-y-2">
-                      {scenario.truth.methodOptions.map((m, i) => (
-                        <button key={i} onClick={() => setVoteMethod(m)} className={`w-full text-left px-4 py-3 rounded-sm border transition-colors font-sans text-sm ${voteMethod === m ? "border-[#b91c1c] bg-[#b91c1c]/20 text-[#f5f5dc]" : "border-[#404040] bg-[#1a1a1a] text-[#d4d4d4] hover:bg-[#262626]"}`}>
-                          {m}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  ))}
                   {error && <div className="bg-[#b91c1c]/20 border border-[#b91c1c] rounded-sm p-3 text-[#f87171] text-sm font-sans">{error}</div>}
                   <Button onClick={sendVote} disabled={loading} className="w-full bg-[#1a1a1a] hover:bg-[#262626] text-[#f5f5dc] py-5 text-base font-sans rounded-sm border border-[#404040]">
                     {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />제출 중...</> : "최종 추리 제출"}
@@ -1052,7 +1033,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
     }
 
     /* ── RESULT ── */
-    if (status === "result" && gameState.results) {
+    if (status === "result") {
       const truth = scenario.truth;
       const murderer = gameState.players.find(p => p.roleId === truth.killerId);
       return (
@@ -1081,20 +1062,30 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                 </div>
               )}
             </div>
-            <h3 className="font-sans text-lg text-[#f5f5dc] mb-3">개인 결과</h3>
-            <div className="space-y-2 mb-6">
+            <h3 className="font-sans text-lg text-[#f5f5dc] mb-3">추리 공개</h3>
+            <div className="space-y-3 mb-6">
               {gameState.players.map(p => {
-                const result = gameState.results![p.id];
+                const notes = gameState.finalVotes[p.id];
                 const isMe = p.id === playerId;
                 return (
-                  <div key={p.id} className={`rounded-sm p-4 border ${isMe ? "border-[#b91c1c]/50" : "border-[#404040]"} ${result?.won ? "bg-green-900/20" : "bg-red-900/20"}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[#f5f5dc] font-sans">{p.roleName}{isMe && " (나)"}</span>
-                      <span className={`text-xs font-sans px-2 py-0.5 rounded ${result?.won ? "bg-green-400/20 text-green-400" : "bg-red-400/20 text-red-400"}`}>
-                        {result?.won ? "승리" : "패배"}
-                      </span>
-                    </div>
-                    <p className="text-[#a3a3a3] text-sm font-sans">{result?.reason}</p>
+                  <div key={p.id} className={`rounded-sm p-4 border ${isMe ? "border-[#b91c1c]/50" : "border-[#404040]"} bg-[#141414]`}>
+                    <p className="text-[#f5f5dc] font-sans text-sm mb-2">{p.roleName}{isMe && " (나)"}</p>
+                    {notes && Object.keys(notes).length > 0 ? (
+                      <div className="space-y-1">
+                        {gameState.players.map(target => {
+                          const note = notes[target.roleId];
+                          if (!note) return null;
+                          return (
+                            <p key={target.roleId} className="text-sm font-sans">
+                              <span className="text-[#737373]">{target.roleName}</span>
+                              <span className="text-[#a3a3a3]"> — {note}</span>
+                            </p>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-[#525252] text-sm font-sans">추리 미제출</p>
+                    )}
                   </div>
                 );
               })}

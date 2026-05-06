@@ -9,7 +9,6 @@ import {
   checkAutoTransition,
   advanceToNextRound,
   applyCardPick,
-  calculateResults,
 } from "@/lib/game-engine";
 
 function ok(data: object) { return NextResponse.json({ success: true, ...data }); }
@@ -126,11 +125,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         if (gs.status !== "card_pick") return err("카드 선택 단계가 아닙니다");
         const turnPlayer = gs.players[gs.currentTurnIndex % gs.players.length];
         if (turnPlayer.id !== playerId) return err("당신의 턴이 아닙니다");
-        const { unlockedNums, cardNumber, playerName } = applyCardPick(gs, playerId, cardId);
+        const { unlockedNums, cardNumber, roleName } = applyCardPick(gs, playerId, cardId);
         const text = unlockedNums.length > 0
-          ? `${playerName}님이 ${cardNumber}번 카드를 선택했습니다. → ${unlockedNums.map((n) => `${n}번`).join(", ")} 카드가 새로 등장했습니다!`
-          : `${playerName}님이 ${cardNumber}번 카드를 선택했습니다.`;
-        await pushChat(gs.roomId, { playerId: "__system__", name: "시스템", text, time: Date.now() });
+          ? `${roleName}님이 ${cardNumber}번 카드를 선택했습니다. → ${unlockedNums.map((n) => `${n}번`).join(", ")} 카드가 새로 등장했습니다!`
+          : `${roleName}님이 ${cardNumber}번 카드를 선택했습니다.`;
+        await pushChat(gs.roomId, { playerId: "__system__", roleName: "시스템", playerName: "시스템", text, time: Date.now() });
         await setGameState(gs.roomId, gs);
         return okWithChat(gs);
       }
@@ -141,16 +140,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         if (!text?.trim()) return err("메시지를 입력해주세요");
         const player = gs.players.find((p) => p.id === playerId);
         if (!player) return err("플레이어를 찾을 수 없습니다", 404);
-        await pushChat(gs.roomId, { playerId, name: player.roleName || player.name, playerName: player.name, text: text.trim(), time: Date.now() });
+        await pushChat(gs.roomId, { playerId, roleName: player.roleName || player.name, playerName: player.name, text: text.trim(), time: Date.now() });
         return okWithChat(gs);
       }
 
       // POST /api/game/room/:roomId/vote
       if (action === "vote") {
-        const { playerId, killer, motive, method } = body;
+        const { playerId, notes } = body;
         if (gs.status !== "final_vote") return err("투표 단계가 아닙니다");
-        gs.finalVotes[playerId] = { killer, motive, method };
-        if (gs.players.every((p) => gs.finalVotes[p.id])) calculateResults(gs);
+        gs.finalVotes[playerId] = notes ?? {};
+        if (gs.players.every((p) => gs.finalVotes[p.id])) gs.status = "result";
         await setGameState(gs.roomId, gs);
         return okWithChat(gs);
       }
