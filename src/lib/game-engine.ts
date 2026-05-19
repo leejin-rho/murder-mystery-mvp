@@ -1,4 +1,4 @@
-import { SCENARIO_REGISTRY } from "@/data/scenario";
+import { SCENARIO_REGISTRY } from "@/data/scenarios";
 import type { GameState, Player } from "./redis";
 
 /* ── Helpers ── */
@@ -26,6 +26,12 @@ export function getScenario(scenarioId: string) {
   return s;
 }
 
+function toCardLabel(card: { id: string; number: number }): string {
+  const m = card.id.match(/^card_(\d+)([a-z])$/i);
+  if (m) return String(Number(m[1]));
+  return String(card.number);
+}
+
 /* ── State transitions ── */
 
 /**
@@ -46,7 +52,8 @@ export function checkAutoTransition(gs: GameState): boolean {
     gs.currentEvent = { title: event.title, text: event.text };
     gs.readyPlayers["event"] = [];
   } else if (gs.availableCards.length === 0) {
-    gs.status = "final_vote";
+    gs.status = "insight";
+    gs.readyPlayers["insight"] = [];
   } else {
     advanceToNextRound(gs);
   }
@@ -113,7 +120,7 @@ export function applyCardPick(
   gs: GameState,
   playerId: string,
   cardId: string
-): { unlockedNums: number[]; cardNumber: number; roleName: string } {
+): { unlockedNums: number[]; unlockedLabels: string[]; cardNumber: number; cardLabel: string; roleName: string } {
   const scenario = getScenario(gs.scenario);
   const pickedCard = scenario.hintCards.find((c) => c.id === cardId);
   if (!pickedCard) throw new Error("카드를 찾을 수 없습니다");
@@ -129,6 +136,7 @@ export function applyCardPick(
 
   // 해금 처리
   const unlockedNums: number[] = [];
+  const unlockedLabels: string[] = [];
   if (pickedCard.unlocks) {
     const allOwned = new Set(Object.values(gs.playerHands).flat());
     for (const num of pickedCard.unlocks) {
@@ -140,6 +148,7 @@ export function applyCardPick(
       ) {
         gs.availableCards.push(unlockCard.id);
         unlockedNums.push(num);
+        unlockedLabels.push(toCardLabel(unlockCard));
       }
     }
   }
@@ -149,12 +158,21 @@ export function applyCardPick(
 
   const turnPlayer = gs.players.find((p) => p.id === playerId)!;
   const roleName = turnPlayer.roleName || turnPlayer.name;
+  const discussionMs = gs.testMode ? 300 : (scenario.discussionSeconds ?? 180) * 1000;
 
-  if (gs.cardsPickedThisRound >= gs.players.length || gs.availableCards.length === 0) {
+  if (pickedCard.actionRule === "force_discussion") {
     gs.status = "discussion";
-    gs.discussionEndsAt = Date.now() + (scenario.discussionSeconds ?? 180) * 1000;
+    gs.discussionEndsAt = Date.now() + (gs.testMode ? 300 : (pickedCard.forceDiscussionSeconds ?? 300) * 1000);
+  } else if (gs.cardsPickedThisRound >= gs.players.length || gs.availableCards.length === 0) {
+    gs.status = "discussion";
+    gs.discussionEndsAt = Date.now() + discussionMs;
   }
 
-  return { unlockedNums, cardNumber: pickedCard.number, roleName };
+  return {
+    unlockedNums,
+    unlockedLabels,
+    cardNumber: pickedCard.number,
+    cardLabel: toCardLabel(pickedCard),
+    roleName,
+  };
 }
-
