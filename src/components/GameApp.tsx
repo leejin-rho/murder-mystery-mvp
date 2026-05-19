@@ -1159,6 +1159,19 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
               )}
               <p className="text-[#f5f5dc] leading-relaxed whitespace-pre-line">{scenario.incidentScene ?? scenario.introText}</p>
             </div>
+            {scenario.investigationTargets && scenario.investigationTargets.length > 0 && (
+              <div className="mystery-card rounded-sm p-4 sm:p-6 mb-4">
+                <div className="text-[#a3a3a3] text-xs uppercase tracking-wider mb-2 font-sans">조사 대상</div>
+                <div className="space-y-2">
+                  {scenario.investigationTargets.map((t) => (
+                    <div key={`${t.name}-${t.location ?? ""}`} className="border border-[#404040] rounded-sm p-3">
+                      <p className="text-[#f5f5dc] font-sans">{t.name}{t.location ? ` · ${t.location}` : ""}</p>
+                      <p className="text-[#a3a3a3] text-sm">{t.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {sharedReadyPanel("사건 장면 확인")}
           </div>
         </div>
