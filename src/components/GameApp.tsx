@@ -1013,9 +1013,9 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
       return (
         <div className="min-h-screen bg-[#0d0d0d] px-4 py-6 sm:p-6 mystery-spotlight pb-20">
           <div className="max-w-5xl mx-auto">
-            <h1 className="font-sans text-2xl sm:text-3xl font-bold text-[#b91c1c] mb-3 text-center">역할 명함 선택</h1>
+            <h1 className="font-sans text-2xl sm:text-3xl font-bold text-[#b91c1c] mb-3 text-center">역할 선택</h1>
             <p className="text-[#a3a3a3] text-sm text-center font-sans mb-6">
-              이름 · 나이 · 사진만 보고 캐릭터를 선택하세요. 비밀 정보는 선택 후 공개됩니다.
+              아래 목록을 보고 역할을 선택해주세요. 비밀 정보는 선택 후 공개됩니다.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
               {scenario.roles.map((role) => {
@@ -1049,8 +1049,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                         className="w-full h-full object-cover object-top"
                       />
                     </div>
-                    <p className="text-[#f5f5dc] font-sans font-semibold">{role.name}</p>
-                    <p className="text-[#a3a3a3] text-sm font-sans mt-1">{role.age ? `${role.age}세` : "나이 비공개"}</p>
+                    <p className="text-[#f5f5dc] font-sans font-semibold">{role.name}({role.age ? `${role.age}세` : "나이 비공개"})</p>
                     {pickedBy && <p className="text-xs mt-2 text-[#f5c542] font-sans">선택자: {mine ? "나" : pickedBy}</p>}
                   </button>
                 );
@@ -1061,7 +1060,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
               {myRoleId ? (
                 <p className="text-[#f5c542] text-sm mt-2 font-sans">선택 완료. 다른 플레이어를 기다리는 중...</p>
               ) : (
-                <p className="text-[#737373] text-sm mt-2 font-sans">원하는 명함을 선택하세요.</p>
+                <p className="text-[#737373] text-sm mt-2 font-sans">원하는 역할을 선택해주세요.</p>
               )}
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                 <Button onClick={selectRandomRole} className="bg-[#1a1a1a] hover:bg-[#262626] border border-[#404040] text-[#f5f5dc]">
