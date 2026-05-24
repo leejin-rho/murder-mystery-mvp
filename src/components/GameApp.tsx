@@ -48,8 +48,8 @@ interface GameState {
   currentRound: number;
   currentTurnIndex: number;
   cardsPickedThisRound: number;
-  availableCards: string[];
-  playerHands: Record<string, string[]>;
+  availableCards: number[];
+  playerHands: Record<string, number[]>;
   chat: { playerId: string; roleName: string; playerName: string; text: string; time: number }[];
   discussionEndsAt: number | null;
   currentEvent: { title: string; text: string } | null;
@@ -176,8 +176,8 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
   const [voteNotes, setVoteNotes] = useState<Record<string, string>>({});
   const [toast, setToast] = useState("");
   const [pastEvents, setPastEvents] = useState<{ title: string; text: string }[]>([]);
-  const [justUnlocked, setJustUnlocked] = useState<Set<string>>(new Set());
-  const prevAvailableRef = useRef<Set<string>>(new Set());
+  const [justUnlocked, setJustUnlocked] = useState<Set<number>>(new Set());
+  const prevAvailableRef = useRef<Set<number>>(new Set());
   const chatEndRef = useRef<HTMLDivElement>(null);
   const prevStatusRef = useRef("");
   const toastShownRef = useRef("");
@@ -460,7 +460,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
     await selectRole(chosen.id);
   };
 
-  const pickCard = async (cardId: string) => {
+  const pickCard = async (cardId: number) => {
     if (!gameState) return;
     try {
       const data = await api(`/room/${gameState.roomId}/pick-card`, { playerId, cardId });
@@ -539,18 +539,8 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
   };
 
   /* ── Helper: Get card content by ID ── */
-  const getCard = (id: string): HintCard | undefined => scenario?.hintCards.find(c => c.id === id);
-  const getCardNumber = (id: string): number | undefined => scenario?.hintCards.find(c => c.id === id)?.number;
-  const getCardDisplayNumber = (card: HintCard): string => {
-    const m = card.id.match(/^card_(\d+)([a-z])$/i);
-    if (m) return String(Number(m[1]));
-    return String(card.number);
-  };
-  const getDisplayNumberByInternalNumber = (internalNumber: number): string => {
-    const card = scenario?.hintCards.find((c) => c.number === internalNumber);
-    return card ? getCardDisplayNumber(card) : String(internalNumber);
-  };
-  const getCardTitle = (card: HintCard) => card.title ?? `증거 #${getCardDisplayNumber(card)}`;
+  const getCard = (id: number): HintCard | undefined => scenario?.hintCards.find(c => c.id === id);
+  const getCardTitle = (card: HintCard) => card.title ?? `증거 #${card.id}`;
   const myCards = gameState?.playerHands[playerId] ?? [];
 
   const countdown = useCountdown(gameState?.discussionEndsAt ?? null);
@@ -822,7 +812,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
     const total = gameState.players.length;
 
     /* ── My Info + Cards side panel ── */
-    const myCardsSorted = myCards.map(id => getCard(id)).filter(Boolean).sort((a, b) => (a!.number ?? 0) - (b!.number ?? 0));
+    const myCardsSorted = myCards.map(id => getCard(id)).filter(Boolean).sort((a, b) => a!.id - b!.id);
 
     const sidePanelJsx = (
       <div className={`
@@ -913,7 +903,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                 <div key={card.id} className={`rounded-[5px] p-2 text-xs font-sans ${card.type === "action" ? "bg-[#2a1a0a] border border-[#8b5e2a]/40 text-[#f5c542]" : "bg-[#1a1a1a] border border-[#404040] text-[#d4d4d4]"}`}>
                   <div className="flex items-start gap-1.5">
                     <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-mono font-bold ${card.type === "action" ? "bg-[#8b5e2a]/30 text-[#f5c542]" : "bg-[#404040]/50 text-[#a3a3a3]"}`}>
-                      {getCardDisplayNumber(card)}
+                      {card.id}
                     </span>
                     <span className="flex-1 leading-relaxed">
                       <strong className="block text-[#f5f5dc] mb-1">{getCardTitle(card)}</strong>
@@ -921,7 +911,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                     </span>
                   </div>
                   {card.unlocks && card.unlocks.length > 0 && (
-                    <p className="text-[9px] text-[#737373] mt-1 pl-6">→ {card.unlocks.map(n => `${getDisplayNumberByInternalNumber(n)}번`).join(", ")} 해금</p>
+                    <p className="text-[9px] text-[#737373] mt-1 pl-6">→ {card.unlocks.map(n => `${n}번`).join(", ")} 해금</p>
                   )}
                 </div>
               );
@@ -1184,7 +1174,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
       const isMyTurn = turnPlayer?.id === playerId;
       const availableSet = new Set(gameState.availableCards);
       const inHandSet = new Set(Object.values(gameState.playerHands).flat());
-      const allCardsSorted = [...(scenario.hintCards ?? [])].sort((a, b) => a.number - b.number);
+      const allCardsSorted = [...(scenario.hintCards ?? [])].sort((a, b) => a.id - b.id);
       const pickableCount = gameState.availableCards.length;
       const locations = scenario.locations ?? [];
       const cardsByLocation = locations.length > 0
@@ -1221,7 +1211,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
             }`}
           >
             <span className={`font-mono text-xl sm:text-2xl font-bold ${isLocked ? "text-[#525252]" : isTaken ? "text-[#404040]" : "text-[#b91c1c]"}`}>
-              {getCardDisplayNumber(card)}
+              {card.id}
             </span>
             <span className={`text-[10px] px-1 text-center leading-tight ${isLocked ? "text-[#525252]" : "text-[#d4d4d4]"}`}>
               {getCardTitle(card)}

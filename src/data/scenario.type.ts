@@ -19,14 +19,13 @@ export interface Role {
 }
 
 export interface HintCard {
-  id: string;
-  number: number;
+  id: number;           // 카드 번호 = 플레이어에게 보이는 번호 = 참조 키
   title?: string;
   type: "info" | "action";
   content: string;
   actionRule?: "show_all" | "keep_secret" | "ask_question" | "force_discussion";
   forceDiscussionSeconds?: number;
-  unlocks?: number[];
+  unlocks?: number[];   // 해금되는 카드 id 목록
   /** 장소별 카드 표시용 (case_002 등) */
   location?: string;
   /** 지도 포인트 매핑용 ID */
@@ -97,7 +96,7 @@ export interface Scenario extends ScenarioMeta {
   investigationTargets?: InvestigationTarget[];
   roles: Role[];
   hintCards: HintCard[];
-  initialCards: number[];      // card numbers available at game start
+  initialCards: number[];      // 게임 시작 시 공개되는 카드 id 목록
   discussionSeconds: number;   // discussion timer per sweep
   events?: RoundEvent[];
   truth: Truth;

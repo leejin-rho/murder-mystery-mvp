@@ -195,8 +195,8 @@ export interface GameState {
   currentRound: number;       // sweep counter (increments each time all players pick once)
   currentTurnIndex: number;
   cardsPickedThisRound: number;
-  availableCards: string[];
-  playerHands: Record<string, string[]>;
+  availableCards: number[];
+  playerHands: Record<string, number[]>;
   discussionEndsAt: number | null;
   currentEvent: { title: string; text: string } | null;
   finalVotes: Record<string, Record<string, string>>;  // playerId → { roleId: 주관식 메모 }
