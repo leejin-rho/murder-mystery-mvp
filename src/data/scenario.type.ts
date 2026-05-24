@@ -1,5 +1,10 @@
 /* ── 타입 정의 ── */
 
+export interface TimelineEntry {
+  time: string;
+  activity: string;
+}
+
 export interface Role {
   id: string;
   name: string;
@@ -17,6 +22,8 @@ export interface Role {
   secret: string;       // 숨겨야 하는 것 (UI에서 강조 표시)
   winCondition: string;
   knownInfo: string[];  // 시작 시 알고 있는 사실 + 역할별 해석 맥락
+  /** 나만 아는 당일 타임라인. 플레이어 본인이 그날 밤 겪은 실제 순서 */
+  timeline?: TimelineEntry[];
 }
 
 export interface HintCard {
@@ -104,4 +111,6 @@ export interface Scenario extends ScenarioMeta {
   mapPoints?: ScenarioMapPoint[];
   /** 조사 단계 약식도 배경 이미지 */
   mapImageUrl?: string;
+  /** 전체 공개 사건 타임라인. 발견 시각·확인된 사실 등 모든 플레이어가 볼 수 있는 기록 */
+  publicTimeline?: TimelineEntry[];
 }

@@ -875,8 +875,32 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                       </ul>
                     </div>
                   )}
+                  {currentRole.timeline && currentRole.timeline.length > 0 && (
+                    <div className="rounded-[5px] bg-[#0d1a0d] border border-[#2a4a2a] p-2">
+                      <p className="text-[9px] text-[#6aaa6a] uppercase tracking-wider mb-1">나의 타임라인</p>
+                      <ul className="space-y-1">
+                        {currentRole.timeline.map((entry, i) => (
+                          <li key={i} className="text-[#d4d4d4] leading-relaxed">
+                            <span className="text-[#6aaa6a] font-mono mr-1">{entry.time}</span>{entry.activity}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
+            </div>
+          )}
+
+          {scenario.publicTimeline && scenario.publicTimeline.length > 0 && (
+            <div className="border-b border-[#404040] p-2 space-y-1">
+              <p className="text-[10px] text-[#a3a3a3] uppercase tracking-wider px-1 py-1 font-sans">사건 타임라인</p>
+              {scenario.publicTimeline.map((entry, i) => (
+                <div key={i} className="flex gap-2 px-1 text-[11px] font-sans">
+                  <span className="text-[#737373] font-mono shrink-0">{entry.time}</span>
+                  <span className="text-[#d4d4d4]">{entry.activity}</span>
+                </div>
+              ))}
             </div>
           )}
 
@@ -1118,6 +1142,19 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                   <div className="pt-3 border-t border-[#404040]">
                     <span className="text-[#a3a3a3] text-xs uppercase tracking-wider">당신이 아는 정보</span>
                     <ul className="mt-1 space-y-1">{currentRole.knownInfo.map((info, i) => <li key={i} className="text-[#d4d4d4]">· {info}</li>)}</ul>
+                  </div>
+                )}
+                {currentRole.timeline && currentRole.timeline.length > 0 && (
+                  <div className="pt-3 border-t border-[#404040]">
+                    <span className="text-[#6aaa6a] text-xs uppercase tracking-wider">나의 타임라인</span>
+                    <ul className="mt-2 space-y-1.5">
+                      {currentRole.timeline.map((entry, i) => (
+                        <li key={i} className="text-sm">
+                          <span className="text-[#6aaa6a] font-mono mr-2">{entry.time}</span>
+                          <span className="text-[#d4d4d4]">{entry.activity}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>
