@@ -20,7 +20,7 @@ Server auto-transitions on timer expiry, detected during GET polling. No WebSock
 Each round = all players pick 1 card each → timed discussion. Game ends when `availableCards` is empty after discussion.
 
 ## Card System
-Cards have two identifiers: `id` (internal, used in `availableCards`/`playerHands`) and `number` (displayed to players, used in `unlocks`). Don't mix them.
+`HintCard.id: number` is the single identifier — it is both the internal key and the number displayed to players. `availableCards` and `playerHands` use this number directly.
 
 Cards enter the pool via two paths only:
 1. `scenario.initialCards` — seeded at game start
@@ -30,6 +30,5 @@ Every card must be reachable from `initialCards` through the unlock graph, or it
 
 Total card count (initialCards + all reachable via unlocks) must be a multiple of `playerCount`. Otherwise the last round ends with some players unable to pick.
 
-`visibleTo` on secret cards is client-side filtered only — full GameState is sent to all clients.
+`actionRule` (`show_all`, `keep_secret`, `ask_question`, `force_discussion`) is defined in card data but not enforced in UI — currently text hints only.
 
-`actionRule` (`show_all`, `keep_secret`, `ask_question`) is defined in card data but not enforced in UI — currently text hints only.

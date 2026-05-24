@@ -6,10 +6,11 @@ export interface Role {
   portraitUrl?: string;
   age?: number;
   occupation?: string;
-  relationshipToVictim?: string;
-  publicPersona?: string;
-  speakingStyle?: string;
-  reputation?: string;
+  /**
+   * 공개 소개 화면(cast_intro)에서 라벨 없이 순서대로 표시되는 문단.
+   * 포함 권장: 피해자와의 관계 · 외적 인상 · 말투 · 평판
+   */
+  profile?: string[];
   publicSuspicion?: string;
   signatureLine?: string;
   background: string;
@@ -43,10 +44,8 @@ export interface StageSetting {
   era: string;
   place: string;
   victim: string;
-  preIncident: string;
-  gatheringReason: string;
-  mood: string;
-  sharedBackground: string;
+  /** 배경 설명 문단 배열 (라벨 없이 순서대로 표시). 사건 직전 상황, 모임 이유, 분위기, 공유 배경 등 */
+  context: string[];
 }
 
 export interface InvestigationTarget {

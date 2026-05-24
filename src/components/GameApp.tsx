@@ -979,10 +979,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                   <p><span className="text-[#a3a3a3]">시대</span> {scenario.stageSetting.era}</p>
                   <p><span className="text-[#a3a3a3]">장소</span> {scenario.stageSetting.place}</p>
                   <p><span className="text-[#a3a3a3]">피해자</span> {scenario.stageSetting.victim}</p>
-                  <p>{scenario.stageSetting.preIncident}</p>
-                  <p>{scenario.stageSetting.gatheringReason}</p>
-                  <p>{scenario.stageSetting.mood}</p>
-                  <p>{scenario.stageSetting.sharedBackground}</p>
+                  {scenario.stageSetting.context.map((p, i) => <p key={i}>{p}</p>)}
                 </div>
               ) : (
                 <p className="text-[#f5f5dc] leading-relaxed font-display whitespace-pre-line">{scenario.introText}</p>
@@ -1095,10 +1092,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
               <div className="border border-[#404040] rounded-sm p-4">
                 <h3 className="font-sans text-lg text-[#f5f5dc] mb-2">{currentRole.name}</h3>
                 <p className="text-[#a3a3a3] text-sm">{[currentRole.age ? `${currentRole.age}세` : "", currentRole.occupation ?? ""].filter(Boolean).join(" · ")}</p>
-                <p className="text-[#d4d4d4] text-sm mt-2">{currentRole.relationshipToVictim}</p>
-                <p className="text-[#d4d4d4] text-sm">{currentRole.publicPersona}</p>
-                <p className="text-[#737373] text-sm mt-1">말투: {currentRole.speakingStyle ?? "-"}</p>
-                <p className="text-[#737373] text-sm">평판: {currentRole.reputation ?? "-"}</p>
+                {currentRole.profile?.map((p, i) => <p key={i} className="text-[#d4d4d4] text-sm mt-2">{p}</p>)}
                 <p className="text-[#f5c542] text-sm mt-2">의심 요소: {currentRole.publicSuspicion ?? "-"}</p>
                 {currentRole.signatureLine && <p className="text-[#f5f5dc] text-sm italic mt-2">"{currentRole.signatureLine}"</p>}
               </div>
