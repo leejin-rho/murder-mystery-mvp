@@ -80,7 +80,6 @@ export interface ScenarioMeta {
 }
 
 export interface Scenario extends ScenarioMeta {
-  version: number;
   introText: string;
   stageSetting?: StageSetting;
   openingScript?: string[];

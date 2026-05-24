@@ -14,7 +14,6 @@ export const CASE_002: Scenario = {
   tags: ["고전 추리", "심리전", "장소 조사"],
   available: true,
   playerCount: 5,
-  version: 1,
   introText:
     "부유한 사업가 강도윤이 자신의 저택에서 열린 비공개 만찬 도중 사망했습니다.\n\n경찰은 아직 도착하지 않았고, 폭설로 외부와 고립된 상태입니다.\n\n이 자리에 있던 5명 중 한 명이 범인입니다.",
   locations: [...CASE_002_LOCATIONS],
