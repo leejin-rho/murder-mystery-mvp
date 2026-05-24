@@ -45,13 +45,24 @@ export const CASE_001: Scenario = {
   mapImageUrl: "/images/maps/scenario1_map.png",
 
   mapPoints: [
-    { id: "study_scene", name: "사건 현장", x: 49.4, y: 42.7 },
-    { id: "victim_body", name: "피해자의 시신", x: 49.0, y: 34.0 },
-    { id: "desk_docs", name: "피해자의 책상", x: 49.4, y: 26.8 },
-    { id: "corridor", name: "복도", x: 49.5, y: 69.6 },
-    { id: "fireplace", name: "벽난로", x: 63.6, y: 42.8 },
-    { id: "personal_items", name: "개인 소지품", x: 76.4, y: 66.0 },
-    { id: "hidden_drawer", name: "숨겨진 서랍", x: 27.8, y: 28.2 },
+    { id: "study_scene", name: "사건 현장", x: 36.0, y: 49.0 },
+
+    { id: "victim_body", name: "피해자의 시신", x: 52.0, y: 39.0 },
+
+    { id: "desk_docs", name: "피해자의 책상", x: 49.5, y: 26.5 },
+
+    { id: "corridor", name: "복도", x: 49.0, y: 72.0 },
+
+    { id: "fireplace", name: "벽난로", x: 66.5, y: 44.0 },
+
+    { id: "personal_items", name: "개인 소지품", x: 78.5, y: 72.0 },
+
+    {
+      id: "hidden_drawer",
+      name: "숨겨진 서랍",
+      x: 27.5,
+      y: 29.0,
+    },
   ],
 
   roles: [
