@@ -15,7 +15,7 @@ export interface Role {
    * 공개 소개 화면(cast_intro)에서 라벨 없이 순서대로 표시되는 문단.
    * 포함 권장: 피해자와의 관계 · 외적 인상 · 말투 · 평판
    */
-  profile?: string[];
+  profile?: string;
   publicSuspicion?: string;
   signatureLine?: string;
   background: string;
@@ -89,7 +89,6 @@ export interface ScenarioMeta {
 export interface Scenario extends ScenarioMeta {
   introText: string;
   stageSetting?: StageSetting;
-  openingScript?: string[];
   incidentScene?: string;
   incidentImageUrl?: string;
   incidentImageFocus?: {

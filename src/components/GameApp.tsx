@@ -1028,7 +1028,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
             <p className="text-[#a3a3a3] text-sm text-center font-sans mb-6">
               아래 목록을 보고 역할을 선택해주세요. 비밀 정보는 선택 후 공개됩니다.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div className={`grid ${scenario.roles.length >= 5 ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"} gap-3 mb-4`}>
               {scenario.roles.map((role) => {
                 const pickedBy = selectedMap.get(role.id);
                 const mine = myRoleId === role.id;
@@ -1116,7 +1116,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
               <div className="border border-[#404040] rounded-sm p-4">
                 <h3 className="font-sans text-lg text-[#f5f5dc] mb-2">{currentRole.name}</h3>
                 <p className="text-[#a3a3a3] text-sm">{[currentRole.age ? `${currentRole.age}세` : "", currentRole.occupation ?? ""].filter(Boolean).join(" · ")}</p>
-                {currentRole.profile?.map((p, i) => <p key={i} className="text-[#d4d4d4] text-sm mt-2">{p}</p>)}
+                {currentRole.profile && currentRole.profile.split("\n").map((p, i) => <p key={i} className="text-[#d4d4d4] text-sm mt-2">{p}</p>)}
                 <p className="text-[#f5c542] text-sm mt-2">의심 요소: {currentRole.publicSuspicion ?? "-"}</p>
                 {currentRole.signatureLine && <p className="text-[#f5f5dc] text-sm italic mt-2">"{currentRole.signatureLine}"</p>}
               </div>
