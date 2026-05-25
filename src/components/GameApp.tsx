@@ -48,8 +48,8 @@ interface GameState {
   currentRound: number;
   currentTurnIndex: number;
   cardsPickedThisRound: number;
-  availableCards: string[];
-  playerHands: Record<string, string[]>;
+  availableCards: number[];
+  playerHands: Record<string, number[]>;
   chat: { playerId: string; roleName: string; playerName: string; text: string; time: number }[];
   discussionEndsAt: number | null;
   currentEvent: { title: string; text: string } | null;
@@ -176,8 +176,8 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
   const [voteNotes, setVoteNotes] = useState<Record<string, string>>({});
   const [toast, setToast] = useState("");
   const [pastEvents, setPastEvents] = useState<{ title: string; text: string }[]>([]);
-  const [justUnlocked, setJustUnlocked] = useState<Set<string>>(new Set());
-  const prevAvailableRef = useRef<Set<string>>(new Set());
+  const [justUnlocked, setJustUnlocked] = useState<Set<number>>(new Set());
+  const prevAvailableRef = useRef<Set<number>>(new Set());
   const chatEndRef = useRef<HTMLDivElement>(null);
   const prevStatusRef = useRef("");
   const toastShownRef = useRef("");
@@ -460,7 +460,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
     await selectRole(chosen.id);
   };
 
-  const pickCard = async (cardId: string) => {
+  const pickCard = async (cardId: number) => {
     if (!gameState) return;
     try {
       const data = await api(`/room/${gameState.roomId}/pick-card`, { playerId, cardId });
@@ -539,18 +539,8 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
   };
 
   /* ── Helper: Get card content by ID ── */
-  const getCard = (id: string): HintCard | undefined => scenario?.hintCards.find(c => c.id === id);
-  const getCardNumber = (id: string): number | undefined => scenario?.hintCards.find(c => c.id === id)?.number;
-  const getCardDisplayNumber = (card: HintCard): string => {
-    const m = card.id.match(/^card_(\d+)([a-z])$/i);
-    if (m) return String(Number(m[1]));
-    return String(card.number);
-  };
-  const getDisplayNumberByInternalNumber = (internalNumber: number): string => {
-    const card = scenario?.hintCards.find((c) => c.number === internalNumber);
-    return card ? getCardDisplayNumber(card) : String(internalNumber);
-  };
-  const getCardTitle = (card: HintCard) => card.title ?? `증거 #${getCardDisplayNumber(card)}`;
+  const getCard = (id: number): HintCard | undefined => scenario?.hintCards.find(c => c.id === id);
+  const getCardTitle = (card: HintCard) => card.title ?? `증거 #${card.id}`;
   const myCards = gameState?.playerHands[playerId] ?? [];
 
   const countdown = useCountdown(gameState?.discussionEndsAt ?? null);
@@ -822,7 +812,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
     const total = gameState.players.length;
 
     /* ── My Info + Cards side panel ── */
-    const myCardsSorted = myCards.map(id => getCard(id)).filter(Boolean).sort((a, b) => (a!.number ?? 0) - (b!.number ?? 0));
+    const myCardsSorted = myCards.map(id => getCard(id)).filter(Boolean).sort((a, b) => a!.id - b!.id);
 
     const sidePanelJsx = (
       <div className={`
@@ -885,8 +875,32 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                       </ul>
                     </div>
                   )}
+                  {currentRole.timeline && currentRole.timeline.length > 0 && (
+                    <div className="rounded-[5px] bg-[#0d1a0d] border border-[#2a4a2a] p-2">
+                      <p className="text-[9px] text-[#6aaa6a] uppercase tracking-wider mb-1">나의 타임라인</p>
+                      <ul className="space-y-1">
+                        {currentRole.timeline.map((entry, i) => (
+                          <li key={i} className="text-[#d4d4d4] leading-relaxed">
+                            <span className="text-[#6aaa6a] font-mono mr-1">{entry.time}</span>{entry.activity}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
+            </div>
+          )}
+
+          {scenario.publicTimeline && scenario.publicTimeline.length > 0 && (
+            <div className="border-b border-[#404040] p-2 space-y-1">
+              <p className="text-[10px] text-[#a3a3a3] uppercase tracking-wider px-1 py-1 font-sans">사건 타임라인</p>
+              {scenario.publicTimeline.map((entry, i) => (
+                <div key={i} className="flex gap-2 px-1 text-[11px] font-sans">
+                  <span className="text-[#737373] font-mono shrink-0">{entry.time}</span>
+                  <span className="text-[#d4d4d4]">{entry.activity}</span>
+                </div>
+              ))}
             </div>
           )}
 
@@ -913,7 +927,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                 <div key={card.id} className={`rounded-[5px] p-2 text-xs font-sans ${card.type === "action" ? "bg-[#2a1a0a] border border-[#8b5e2a]/40 text-[#f5c542]" : "bg-[#1a1a1a] border border-[#404040] text-[#d4d4d4]"}`}>
                   <div className="flex items-start gap-1.5">
                     <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-mono font-bold ${card.type === "action" ? "bg-[#8b5e2a]/30 text-[#f5c542]" : "bg-[#404040]/50 text-[#a3a3a3]"}`}>
-                      {getCardDisplayNumber(card)}
+                      {card.id}
                     </span>
                     <span className="flex-1 leading-relaxed">
                       <strong className="block text-[#f5f5dc] mb-1">{getCardTitle(card)}</strong>
@@ -921,7 +935,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                     </span>
                   </div>
                   {card.unlocks && card.unlocks.length > 0 && (
-                    <p className="text-[9px] text-[#737373] mt-1 pl-6">→ {card.unlocks.map(n => `${getDisplayNumberByInternalNumber(n)}번`).join(", ")} 해금</p>
+                    <p className="text-[9px] text-[#737373] mt-1 pl-6">→ {card.unlocks.map(n => `${n}번`).join(", ")} 해금</p>
                   )}
                 </div>
               );
@@ -989,10 +1003,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                   <p><span className="text-[#a3a3a3]">시대</span> {scenario.stageSetting.era}</p>
                   <p><span className="text-[#a3a3a3]">장소</span> {scenario.stageSetting.place}</p>
                   <p><span className="text-[#a3a3a3]">피해자</span> {scenario.stageSetting.victim}</p>
-                  <p>{scenario.stageSetting.preIncident}</p>
-                  <p>{scenario.stageSetting.gatheringReason}</p>
-                  <p>{scenario.stageSetting.mood}</p>
-                  <p>{scenario.stageSetting.sharedBackground}</p>
+                  {scenario.stageSetting.context.map((p, i) => <p key={i}>{p}</p>)}
                 </div>
               ) : (
                 <p className="text-[#f5f5dc] leading-relaxed font-display whitespace-pre-line">{scenario.introText}</p>
@@ -1017,7 +1028,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
             <p className="text-[#a3a3a3] text-sm text-center font-sans mb-6">
               아래 목록을 보고 역할을 선택해주세요. 비밀 정보는 선택 후 공개됩니다.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div className={`grid ${scenario.roles.length >= 5 ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"} gap-3 mb-4`}>
               {scenario.roles.map((role) => {
                 const pickedBy = selectedMap.get(role.id);
                 const mine = myRoleId === role.id;
@@ -1105,10 +1116,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
               <div className="border border-[#404040] rounded-sm p-4">
                 <h3 className="font-sans text-lg text-[#f5f5dc] mb-2">{currentRole.name}</h3>
                 <p className="text-[#a3a3a3] text-sm">{[currentRole.age ? `${currentRole.age}세` : "", currentRole.occupation ?? ""].filter(Boolean).join(" · ")}</p>
-                <p className="text-[#d4d4d4] text-sm mt-2">{currentRole.relationshipToVictim}</p>
-                <p className="text-[#d4d4d4] text-sm">{currentRole.publicPersona}</p>
-                <p className="text-[#737373] text-sm mt-1">말투: {currentRole.speakingStyle ?? "-"}</p>
-                <p className="text-[#737373] text-sm">평판: {currentRole.reputation ?? "-"}</p>
+                {currentRole.profile && currentRole.profile.split("\n").map((p, i) => <p key={i} className="text-[#d4d4d4] text-sm mt-2">{p}</p>)}
                 <p className="text-[#f5c542] text-sm mt-2">의심 요소: {currentRole.publicSuspicion ?? "-"}</p>
                 {currentRole.signatureLine && <p className="text-[#f5f5dc] text-sm italic mt-2">"{currentRole.signatureLine}"</p>}
               </div>
@@ -1134,6 +1142,19 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                   <div className="pt-3 border-t border-[#404040]">
                     <span className="text-[#a3a3a3] text-xs uppercase tracking-wider">당신이 아는 정보</span>
                     <ul className="mt-1 space-y-1">{currentRole.knownInfo.map((info, i) => <li key={i} className="text-[#d4d4d4]">· {info}</li>)}</ul>
+                  </div>
+                )}
+                {currentRole.timeline && currentRole.timeline.length > 0 && (
+                  <div className="pt-3 border-t border-[#404040]">
+                    <span className="text-[#6aaa6a] text-xs uppercase tracking-wider">나의 타임라인</span>
+                    <ul className="mt-2 space-y-1.5">
+                      {currentRole.timeline.map((entry, i) => (
+                        <li key={i} className="text-sm">
+                          <span className="text-[#6aaa6a] font-mono mr-2">{entry.time}</span>
+                          <span className="text-[#d4d4d4]">{entry.activity}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>
@@ -1184,7 +1205,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
       const isMyTurn = turnPlayer?.id === playerId;
       const availableSet = new Set(gameState.availableCards);
       const inHandSet = new Set(Object.values(gameState.playerHands).flat());
-      const allCardsSorted = [...(scenario.hintCards ?? [])].sort((a, b) => a.number - b.number);
+      const allCardsSorted = [...(scenario.hintCards ?? [])].sort((a, b) => a.id - b.id);
       const pickableCount = gameState.availableCards.length;
       const locations = scenario.locations ?? [];
       const cardsByLocation = locations.length > 0
@@ -1221,7 +1242,7 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
             }`}
           >
             <span className={`font-mono text-xl sm:text-2xl font-bold ${isLocked ? "text-[#525252]" : isTaken ? "text-[#404040]" : "text-[#b91c1c]"}`}>
-              {getCardDisplayNumber(card)}
+              {card.id}
             </span>
             <span className={`text-[10px] px-1 text-center leading-tight ${isLocked ? "text-[#525252]" : "text-[#d4d4d4]"}`}>
               {getCardTitle(card)}

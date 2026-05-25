@@ -26,12 +26,6 @@ export function getScenario(scenarioId: string) {
   return s;
 }
 
-function toCardLabel(card: { id: string; number: number }): string {
-  const m = card.id.match(/^card_(\d+)([a-z])$/i);
-  if (m) return String(Number(m[1]));
-  return String(card.number);
-}
-
 /* ── State transitions ── */
 
 /**
@@ -82,7 +76,7 @@ export function createInitialGameState(
 
   const initialCardIds = shuffle(
     scenario.hintCards
-      .filter((c) => scenario.initialCards.includes(c.number))
+      .filter((c) => scenario.initialCards.includes(c.id))
       .map((c) => c.id)
   );
 
@@ -119,8 +113,8 @@ export function assignRoles(gs: GameState): void {
 export function applyCardPick(
   gs: GameState,
   playerId: string,
-  cardId: string
-): { unlockedNums: number[]; unlockedLabels: string[]; cardNumber: number; cardLabel: string; roleName: string } {
+  cardId: number
+): { unlockedLabels: string[]; cardLabel: string; roleName: string } {
   const scenario = getScenario(gs.scenario);
   const pickedCard = scenario.hintCards.find((c) => c.id === cardId);
   if (!pickedCard) throw new Error("카드를 찾을 수 없습니다");
@@ -135,20 +129,18 @@ export function applyCardPick(
   gs.playerHands[playerId].push(cardId);
 
   // 해금 처리
-  const unlockedNums: number[] = [];
   const unlockedLabels: string[] = [];
   if (pickedCard.unlocks) {
     const allOwned = new Set(Object.values(gs.playerHands).flat());
-    for (const num of pickedCard.unlocks) {
-      const unlockCard = scenario.hintCards.find((c) => c.number === num);
+    for (const unlockId of pickedCard.unlocks) {
+      const unlockCard = scenario.hintCards.find((c) => c.id === unlockId);
       if (
         unlockCard &&
         !gs.availableCards.includes(unlockCard.id) &&
         !allOwned.has(unlockCard.id)
       ) {
         gs.availableCards.push(unlockCard.id);
-        unlockedNums.push(num);
-        unlockedLabels.push(toCardLabel(unlockCard));
+        unlockedLabels.push(String(unlockCard.id));
       }
     }
   }
@@ -169,10 +161,8 @@ export function applyCardPick(
   }
 
   return {
-    unlockedNums,
     unlockedLabels,
-    cardNumber: pickedCard.number,
-    cardLabel: toCardLabel(pickedCard),
+    cardLabel: String(pickedCard.id),
     roleName,
   };
 }
