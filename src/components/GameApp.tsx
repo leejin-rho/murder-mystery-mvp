@@ -934,9 +934,6 @@ export default function GameApp({ initialRoomId }: { initialRoomId?: string } = 
                       {card.content}
                     </span>
                   </div>
-                  {card.unlocks && card.unlocks.length > 0 && (
-                    <p className="text-[9px] text-[#737373] mt-1 pl-6">→ {card.unlocks.map(n => `${n}번`).join(", ")} 해금</p>
-                  )}
                 </div>
               );
             })}
