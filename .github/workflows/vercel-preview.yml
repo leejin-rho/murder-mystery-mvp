@@ -38,7 +38,9 @@ jobs:
           cache: "pnpm"
 
       - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+        # 56.3.0+ passes redacted Sensitive env values to `vercel build` as
+        # literal "[SENSITIVE]" strings (vercel/vercel#17514).
+        run: npm install --global vercel@56.2.0
 
       - name: Pull Vercel Environment Information (preview)
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
