@@ -43,6 +43,15 @@ export const CASE_002: Scenario = {
   incidentScene:
     "현관문은 잠겨 있었지만 도어락과 문틀에는 손상된 흔적이 없었다.\n\n윤지안은 거실 테이블 옆 바닥에서 발견되었다. 가까운 곳에는 깨진 유리컵과 흩어진 서류가 남아 있었다.\n\n목에는 폭이 일정하지 않은 띠 모양의 압흔이 있었고, 집 안에서 곧바로 흉기라고 단정할 물건은 발견되지 않았다.\n\n반려견은 물그릇이 빈 채 작은방에 있었으며, 현관 밖에는 며칠치 택배가 쌓여 있었다.",
 
+  incidentImageUrl: "/images/expls/scenario2_expl.png",
+
+  incidentImageFocus: {
+    aspectRatio: "3 / 2",
+    objectPosition: "center center",
+  },
+
+  mapImageUrl: "/images/maps/scenario2_map.png",
+
   locations: [...CASE_002_LOCATIONS],
 
   mapPoints: [
@@ -69,6 +78,7 @@ export const CASE_002: Scenario = {
     {
       id: "representative",
       name: "동대표 — 최은영",
+      portraitUrl: "/images/characters/scenario2/representative.png",
       age: 42,
       occupation: "보험 설계사",
       profile:
@@ -96,6 +106,7 @@ export const CASE_002: Scenario = {
     {
       id: "neighbor",
       name: "앞집 주민 — 김나연",
+      portraitUrl: "/images/characters/scenario2/neighbor.png",
       age: 34,
       occupation: "프리랜서 그래픽 디자이너",
       profile:
@@ -123,6 +134,7 @@ export const CASE_002: Scenario = {
     {
       id: "downstairs",
       name: "아래층 주민 — 박성훈",
+      portraitUrl: "/images/characters/scenario2/downstairs.png",
       age: 36,
       occupation: "IT 기업 개발자",
       profile:
@@ -149,6 +161,7 @@ export const CASE_002: Scenario = {
     {
       id: "manager",
       name: "관리소장 — 오상진",
+      portraitUrl: "/images/characters/scenario2/manager.png",
       age: 57,
       occupation: "아파트 관리소장",
       profile:
